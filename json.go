@@ -7,7 +7,6 @@ import (
 	"strconv"
 
 	"github.com/rprtr258/fun"
-	"github.com/samber/lo"
 )
 
 func isDigit(ch byte) bool {
@@ -74,7 +73,7 @@ func (p *jsonParser) parseObject(m map[string]any) *node {
 		value: fun.Ptr("{"),
 	}
 
-	keys := lo.Keys(m)
+	keys := fun.Keys(m)
 	sort.Strings(keys)
 
 	for i, k := range keys {

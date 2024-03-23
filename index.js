@@ -9,58 +9,13 @@ const process = await import('node:process')
 const {StringDecoder} = await import('node:string_decoder')
 const {pathToFileURL} = await import('node:url')
 
-void async function main() {
-  let flagHelp = false;
-  let flagRaw = false;
-  let flagSlurp = false;
-  const args = [];
-  for (const arg of process.argv.slice(2)) {
-    switch (arg) {
-    case '--help',  '-h': flagHelp            = true; break;
-    case '--raw',   '-r': flagRaw             = true; break;
-    case '--slurp', '-s': flagSlurp           = true; break;
-    case '-rs',    '-sr': flagRaw = flagSlurp = true; break;
-    default:              args.push(arg);
-    }
+async function importFxrc(path) {
+  try {
+    await import(pathToFileURL(join(path, '.fxrc.js')))
+  } catch (err) {
+    if (err.code !== 'ERR_MODULE_NOT_FOUND') throw err
   }
-
-  if (flagHelp || args.length === 0 && process.stdin.isTTY) {
-    console.log(`Usage: fx [flags] [code...]
-
-Flags
-  -h, --help    Display this help message
-  -r, --raw     Treat input as a raw string
-  -s, --slurp   Read all inputs into an array`)
-    return
-  }
-
-  const theme = themes(process.stdout.isTTY ? (process.env.FX_THEME || '1') : '0');
-  await importFxrc(process.cwd());
-  await importFxrc(os.homedir());
-
-  let fd = 0; // stdin
-  if (args.length > 0) {
-    if (await isFile(args[0])) {
-      fd = fs.openSync(args.shift(), 'r');
-    } else if (await isFile(args.at(-1))) {
-      fd = fs.openSync(args.pop(), 'r');
-    }
-  }
-
-  const gen = await read(fd);
-  const input = flagRaw ? readLine(gen) : parseJson(gen);
-  if (flagSlurp) {
-    const array = [];
-    for (const json of input) {;
-      array.push(json);
-    }
-    await runTransforms(array, args, theme);
-  } else {
-    for (const json of input) {
-      await runTransforms(json, args, theme);
-    }
-  }
-}();
+}
 
 const skip = Symbol('skip');
 
@@ -623,27 +578,69 @@ function stringify(value, theme) {
   return stringifyValue(value)
 }
 
-function themes(id) {
-  const themes = {
-    "0": ["", "", "", "", "", ""],
-    "1": ["", "1;34", "32", "36", "35", "38;5;243"],
-    "2": ["", "32", "34", "36", "35", "38;5;243"],
-    "3": ["", "95", "93", "96", "31", "38;5;243"],
-    "4": ["", "38;5;50", "38;5;39", "38;5;98", "38;5;205", "38;5;243"],
-    "5": ["", "38;5;230", "38;5;221", "38;5;209", "38;5;209", "38;5;243"],
-    "6": ["", "38;5;69", "38;5;78", "38;5;221", "38;5;203", "38;5;243"],
-    "7": ["", "1;38;5;42", "1;38;5;213", "1;38;5;201", "1;38;5;201", "38;5;243"],
-    "8": ["", "1;38;5;51", "38;5;195", "38;5;123", "38;5;50", "38;5;243"],
-    "🔵": ["1;38;5;33", "38;5;33", "", "", "", ""],
-    "🥝": ["38;5;179", "1;38;5;154", "38;5;82", "38;5;226", "38;5;226", "38;5;230"],
-  }
-  return themes[id] || themes['1']
+const _themes = {
+  "0": ["", "", "", "", "", ""],
+  "1": ["", "1;34", "32", "36", "35", "38;5;243"],
+  "2": ["", "32", "34", "36", "35", "38;5;243"],
+  "3": ["", "95", "93", "96", "31", "38;5;243"],
+  "4": ["", "38;5;50", "38;5;39", "38;5;98", "38;5;205", "38;5;243"],
+  "5": ["", "38;5;230", "38;5;221", "38;5;209", "38;5;209", "38;5;243"],
+  "6": ["", "38;5;69", "38;5;78", "38;5;221", "38;5;203", "38;5;243"],
+  "7": ["", "1;38;5;42", "1;38;5;213", "1;38;5;201", "1;38;5;201", "38;5;243"],
+  "8": ["", "1;38;5;51", "38;5;195", "38;5;123", "38;5;50", "38;5;243"],
+  "🔵": ["1;38;5;33", "38;5;33", "", "", "", ""],
+  "🥝": ["38;5;179", "1;38;5;154", "38;5;82", "38;5;226", "38;5;226", "38;5;230"],
 }
 
-async function importFxrc(path) {
-  try {
-    await import(pathToFileURL(join(path, '.fxrc.js')))
-  } catch (err) {
-    if (err.code !== 'ERR_MODULE_NOT_FOUND') throw err
+void async function main() {
+  let flagHelp = false;
+  let flagRaw = false;
+  let flagSlurp = false;
+  const args = [];
+  for (const arg of process.argv.slice(2)) {
+    switch (arg) {
+    case '-h', '--help':  flagHelp            = true; break;
+    case '-r', '--raw':   flagRaw             = true; break;
+    case '-s', '--slurp': flagSlurp           = true; break;
+    case '-rs', '-sr':    flagRaw = flagSlurp = true; break;
+    default:              args.push(arg);
+    }
   }
-}
+
+  if (flagHelp || args.length === 0 && process.stdin.isTTY) {
+    console.log(`Usage: fx [flags] [code...]
+
+Flags
+  -h, --help    Display this help message
+  -r, --raw     Treat input as a raw string
+  -s, --slurp   Read all inputs into an array`)
+    return
+  }
+
+  const theme = _themes[process.stdout.isTTY ? (process.env.FX_THEME || '1') : '0'] || _themes['1'];
+
+  await importFxrc(process.cwd());
+  await importFxrc(os.homedir());
+
+  let fd = 0; // stdin
+  if (args.length > 0) {
+    if (await isFile(args[0])) {
+      fd = fs.openSync(args.shift(), 'r');
+    } else if (await isFile(args.at(-1))) {
+      fd = fs.openSync(args.pop(), 'r');
+    }
+  }
+
+  const input = (flagRaw ? readLine : parseJson)(await read(fd));
+  if (flagSlurp) {
+    const array = [];
+    for (const json of input) {;
+      array.push(json);
+    }
+    await runTransforms(array, args, theme);
+  } else {
+    for (const json of input) {
+      await runTransforms(json, args, theme);
+    }
+  }
+}();

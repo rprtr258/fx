@@ -6,8 +6,8 @@ import (
 	"sort"
 
 	"github.com/muesli/termenv"
+	"github.com/rprtr258/fun"
 	"github.com/rprtr258/scuf"
-	"github.com/samber/lo"
 )
 
 type theme struct {
@@ -32,7 +32,7 @@ func valueStyle(bb *string, selected, chunk bool) scuf.Modifier {
 		return currentTheme.String
 	}
 
-	b := []byte(lo.FromPtr(bb))
+	b := []byte(*bb)
 	if isDigit(b[0]) || b[0] == '-' {
 		return currentTheme.Number
 	}
@@ -75,7 +75,7 @@ func readCurrentTheme() theme {
 
 var (
 	themeNames = func() []string {
-		themeNames := lo.Keys(themes)
+		themeNames := fun.Keys(themes)
 		sort.Strings(themeNames)
 		return themeNames
 	}()

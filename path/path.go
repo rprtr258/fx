@@ -3,7 +3,10 @@ package path
 import (
 	"regexp"
 	"strconv"
+	"strings"
 	"unicode"
+
+	"github.com/rprtr258/fun"
 )
 
 type state int
@@ -23,7 +26,7 @@ const (
 )
 
 func Split(p string) ([]any, bool) {
-	path := make([]any, 0)
+	path := []any{}
 	s := ""
 	state := stateStart
 	for _, ch := range p {
@@ -175,18 +178,21 @@ func isProp(ch rune) bool {
 var Identifier = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*$`)
 
 func Join(path []any) string {
-	s := ""
-	for _, v := range path {
-		switch v := v.(type) {
-		case string:
-			if Identifier.MatchString(v) {
-				s += "." + v
-			} else {
-				s += "[" + strconv.Quote(v) + "]"
+	return strings.Join(fun.Map[string](
+		func(v any) string {
+			switch v := v.(type) {
+			case string:
+				if Identifier.MatchString(v) {
+					return "." + v
+				} else {
+					return "[" + strconv.Quote(v) + "]"
+				}
+			case int:
+				return "[" + strconv.Itoa(v) + "]"
+			default:
+				return ""
 			}
-		case int:
-			s += "[" + strconv.Itoa(v) + "]"
-		}
-	}
-	return s
+		},
+		path...,
+	), "")
 }

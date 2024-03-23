@@ -14,7 +14,6 @@ require (
 	github.com/rprtr258/fun v0.0.13
 	github.com/rprtr258/scuf v0.0.6
 	github.com/sahilm/fuzzy v0.1.1-0.20230530133925-c48e322e2a8f
-	github.com/samber/lo v1.39.0
 	github.com/stretchr/testify v1.8.4
 )
 
@@ -31,7 +30,6 @@ require (
 	github.com/muesli/reflow v0.3.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rivo/uniseg v0.4.4 // indirect
-	golang.org/x/exp v0.0.0-20220303212507-bbda1eaf7a17 // indirect
 	golang.org/x/sync v0.6.0 // indirect
 	golang.org/x/sys v0.16.0 // indirect
 	golang.org/x/term v0.16.0 // indirect

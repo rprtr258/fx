@@ -20,15 +20,23 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/mattn/go-isatty"
+	"github.com/rprtr258/fun"
 	"github.com/rprtr258/scuf"
 	"github.com/sahilm/fuzzy"
-	"github.com/samber/lo"
 
 	jsonpath "github.com/antonmedv/fx/path"
 )
 
-//go:embed npm/index.js
+//go:embed index.js
 var src []byte
+
+func reFindAllStringIndex(re *regexp.Regexp, s string) [][2]int {
+	var res [][2]int
+	for _, v := range re.FindAllStringIndex(s, -1) {
+		res = append(res, [2]int(v[:2]))
+	}
+	return res
+}
 
 func regexCase(code string) (string, bool) {
 	switch {
@@ -43,8 +51,7 @@ func regexCase(code string) (string, bool) {
 
 func reduce(fns []string) error {
 	script := filepath.Join(os.TempDir(), "fx.js")
-	_, err := os.Stat(script)
-	if os.IsNotExist(err) {
+	if _, err := os.Stat(script); os.IsNotExist(err) {
 		if err := os.WriteFile(script, src, 0o644); err != nil {
 			return err
 		}
@@ -58,6 +65,7 @@ func reduce(fns []string) error {
 		if err != nil {
 			return errors.New("Node.js or Deno is required to run fx with reducers")
 		}
+
 		args = []string{"run", "-A", script}
 		envVar = "V8_FLAGS=--max-old-space-size=16384"
 	}
@@ -176,22 +184,18 @@ func (m *model) handleDigKey(msg tea.KeyMsg) tea.Cmd {
 
 	case msg.Type == tea.KeyEnter:
 		m.digInput.Blur()
-		digPath, ok := jsonpath.Split(m.digInput.Value())
-		if ok {
-			n := m.selectByPath(digPath)
-			if n != nil {
+		if digPath, ok := jsonpath.Split(m.digInput.Value()); ok {
+			if n := m.selectByPath(digPath); n != nil {
 				m.selectNode(n)
 			}
 		}
 
 	case key.Matches(msg, key.NewBinding(key.WithKeys("ctrl+w"))):
-		digPath, ok := jsonpath.Split(m.digInput.Value())
-		if ok {
+		if digPath, ok := jsonpath.Split(m.digInput.Value()); ok {
 			if len(digPath) > 0 {
 				digPath = digPath[:len(digPath)-1]
 			}
-			n := m.selectByPath(digPath)
-			if n != nil {
+			if n := m.selectByPath(digPath); n != nil {
 				m.selectNode(n)
 				m.digInput.SetValue(m.cursorPath())
 				m.digInput.CursorEnd()
@@ -200,11 +204,10 @@ func (m *model) handleDigKey(msg tea.KeyMsg) tea.Cmd {
 
 	case key.Matches(msg, textinput.DefaultKeyMap.WordBackward):
 		value := m.digInput.Value()
-		pth, ok := jsonpath.Split(value[0:m.digInput.Position()])
-		if ok {
-			if len(pth) > 0 {
-				pth = pth[:len(pth)-1]
-				m.digInput.SetCursor(len(jsonpath.Join(pth)))
+		if path, ok := jsonpath.Split(value[0:m.digInput.Position()]); ok {
+			if len(path) > 0 {
+				path = path[:len(path)-1]
+				m.digInput.SetCursor(len(jsonpath.Join(path)))
 			} else {
 				m.digInput.CursorStart()
 			}
@@ -213,11 +216,10 @@ func (m *model) handleDigKey(msg tea.KeyMsg) tea.Cmd {
 	case key.Matches(msg, textinput.DefaultKeyMap.WordForward):
 		value := m.digInput.Value()
 		fullPath, ok1 := jsonpath.Split(value)
-		pth, ok2 := jsonpath.Split(value[0:m.digInput.Position()])
-		if ok1 && ok2 {
-			if len(pth) < len(fullPath) {
-				pth = append(pth, fullPath[len(pth)])
-				m.digInput.SetCursor(len(jsonpath.Join(pth)))
+		if path, ok2 := jsonpath.Split(value[0:m.digInput.Position()]); ok1 && ok2 {
+			if len(path) < len(fullPath) {
+				path = append(path, fullPath[len(path)])
+				m.digInput.SetCursor(len(jsonpath.Join(path)))
 			} else {
 				m.digInput.CursorEnd()
 			}
@@ -232,8 +234,7 @@ func (m *model) handleDigKey(msg tea.KeyMsg) tea.Cmd {
 		}
 
 		m.digInput, cmd = m.digInput.Update(msg)
-		n := m.dig(m.digInput.Value())
-		if n != nil {
+		if n := m.dig(m.digInput.Value()); n != nil {
 			m.selectNode(n)
 		}
 	}
@@ -372,7 +373,7 @@ func (m *model) handleKey(msg tea.KeyMsg) tea.Cmd {
 		m.showCursor = true
 
 	case key.Matches(msg, keyMap.CollapseAll):
-		for n := m.top; n != nil; n = lo.FromPtr(n.end).next {
+		for n := m.top; n != nil; n = fun.Deref(n.end).next {
 			n.collapseRecursively()
 		}
 		m.cursor = 0
@@ -381,7 +382,7 @@ func (m *model) handleKey(msg tea.KeyMsg) tea.Cmd {
 
 	case key.Matches(msg, keyMap.ExpandAll):
 		at := m.cursorPointsTo()
-		for n := m.top; n != nil; n = lo.FromPtr(n.end).next {
+		for n := m.top; n != nil; n = fun.Deref(n.end).next {
 			n.expandRecursively()
 		}
 		m.selectNode(at)
@@ -482,14 +483,14 @@ func (m *model) View() string {
 		screen += m.prettyPrint(n, isSelected)
 
 		if n.isCollapsed() {
-			if lo.FromPtr(n.value)[0] == '{' {
+			if fun.Deref(n.value)[0] == '{' {
 				if n.collapsed.key != nil {
 					screen += scuf.String(*n.collapsed.key, currentTheme.Preview)
 					screen += colonPreview
 				}
 				screen += dot3
 				screen += closeCurlyBracket
-			} else if lo.FromPtr(n.value)[0] == '[' {
+			} else if fun.Deref(n.value)[0] == '[' {
 				screen += dot3
 				screen += closeSquareBracket
 			}
@@ -535,7 +536,7 @@ func (m *model) View() string {
 		re, ci := regexCase(m.searchInput.Value())
 
 		screen += "\n"
-		screen += flex(m.termWidth, "/"+re+"/"+lo.Ternary(ci, "i", ""), msg)
+		screen += flex(m.termWidth, "/"+re+"/"+fun.IF(ci, "i", ""), msg)
 	}
 
 	return screen
@@ -543,7 +544,7 @@ func (m *model) View() string {
 
 func (m *model) prettyKey(node *node, selected bool) string {
 	b := node.key
-	style := lo.Ternary(selected, currentTheme.Cursor, currentTheme.Key)
+	style := fun.IF(selected, currentTheme.Cursor, currentTheme.Key)
 
 	indexes, ok := m.search.keys[node]
 	if !ok {
@@ -565,8 +566,8 @@ func (m *model) prettyKey(node *node, selected bool) string {
 }
 
 func (m *model) prettyPrint(node *node, selected bool) string {
-	b := lo.Ternary(node.chunk != nil, node.chunk, node.value)
-	if lo.FromPtr(b) == "" {
+	b := fun.IF(node.chunk != nil, node.chunk, node.value)
+	if fun.Deref(b) == "" {
 		return ""
 	}
 
@@ -589,7 +590,7 @@ func (m *model) prettyPrint(node *node, selected bool) string {
 		return out
 	}
 
-	return scuf.String(lo.FromPtr(b), style)
+	return scuf.String(fun.Deref(b), style)
 }
 
 func (m *model) viewHeight() int {
@@ -713,7 +714,7 @@ func (m *model) cursorValue() string {
 	if at.chunk != nil && at.value == nil {
 		at = at.parent()
 	}
-	out.WriteString(lo.FromPtr(at.value))
+	out.WriteString(fun.Deref(at.value))
 	if at.hasChildren() {
 		it := at.next
 		if at.isCollapsed() {
@@ -727,7 +728,7 @@ func (m *model) cursorValue() string {
 			if it.chunk != nil {
 				out.WriteString(*it.chunk)
 			} else {
-				out.WriteString(lo.FromPtr(it.value))
+				out.WriteString(fun.Deref(it.value))
 			}
 			if it == at.end {
 				break
@@ -804,9 +805,9 @@ func (m *model) doSearch(s string) {
 	}
 
 	searchIndex := 0
-	for n := m.top; n != nil; n = lo.Ternary(n.isCollapsed(), n.collapsed, n.next) {
+	for n := m.top; n != nil; n = fun.IF(n.isCollapsed(), n.collapsed, n.next) {
 		if n.key != nil {
-			if indexes := re.FindAllStringIndex(*n.key, -1); len(indexes) > 0 {
+			if indexes := reFindAllStringIndex(re, *n.key); len(indexes) > 0 {
 				for i, pair := range indexes {
 					m.search.results = append(m.search.results, n)
 					m.search.keys[n] = append(m.search.keys[n], match{
@@ -819,17 +820,17 @@ func (m *model) doSearch(s string) {
 			}
 		}
 
-		if indexes := re.FindAllStringIndex(lo.FromPtr(n.value), -1); len(indexes) > 0 {
+		if indexes := reFindAllStringIndex(re, fun.Deref(n.value)); len(indexes) > 0 {
 			for range indexes {
 				m.search.results = append(m.search.results, n)
 			}
 			if n.chunk != nil {
 				// String can be split into chunks, so we need to map the indexes to the chunks.
 				chunkNodes := []*node{n}
-				chunks := [][]byte{[]byte(lo.FromPtr(n.chunk))}
+				chunks := [][]byte{[]byte(fun.Deref(n.chunk))}
 				for it := n.next; it != nil; it = it.next {
 					chunkNodes = append(chunkNodes, it)
-					chunks = append(chunks, []byte(lo.FromPtr(it.chunk)))
+					chunks = append(chunks, []byte(fun.Deref(it.chunk)))
 					if it == n.chunkEnd {
 						break
 					}

@@ -8,31 +8,31 @@ import (
 
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/samber/lo"
+	"github.com/rprtr258/fun"
 )
 
 var ErrUsage = errors.New("usage")
 
 var usage = func() string {
 	v := reflect.ValueOf(keyMap)
-	fields := lo.Map(
-		reflect.VisibleFields(v.Type()),
+	fields := fun.Map[key.Binding](
 		func(_ reflect.StructField, i int) key.Binding {
 			return v.Field(i).Interface().(key.Binding)
-		})
+		},
+		reflect.VisibleFields(v.Type())...,
+	)
 
 	keyMapInfo := lipgloss.NewStyle().PaddingLeft(2).Render(lipgloss.JoinHorizontal(
 		lipgloss.Top,
-		strings.Join(lo.Map(
-			fields,
+		strings.Join(fun.Map[string](
 			func(b key.Binding, _ int) string {
 				return or(b.Help().Key, strings.Join(b.Keys(), ", ")) + "    "
-			}), "\n"),
-		strings.Join(lo.Map(
-			fields,
+			}, fields...), "\n"),
+
+		strings.Join(fun.Map[string](
 			func(b key.Binding, _ int) string {
 				return b.Help().Desc
-			}), "\n"),
+			}, fields...), "\n"),
 	))
 
 	return fmt.Sprintf(`fx terminal JSON viewer

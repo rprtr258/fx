@@ -4,7 +4,7 @@ import (
 	"strconv"
 
 	jsonpath "github.com/antonmedv/fx/path"
-	"github.com/samber/lo"
+	"github.com/rprtr258/fun"
 )
 
 type node struct {
@@ -28,7 +28,7 @@ func (n *node) append(child *node) {
 	}
 	n.end.next = child
 	child.prev = n.end
-	n.end = lo.Ternary(child.end == nil, child, child.end)
+	n.end = fun.IF(child.end == nil, child, child.end)
 }
 
 func (n *node) insertChunk(chunk *node) {
@@ -101,7 +101,7 @@ func (n *node) collapse() {
 }
 
 func (n *node) collapseRecursively() {
-	for at := lo.Ternary(n.isCollapsed(), n.collapsed, n.next); at != nil && at != n.end; at = at.next {
+	for at := fun.IF(n.isCollapsed(), n.collapsed, n.next); at != nil && at != n.end; at = at.next {
 		if !at.hasChildren() {
 			continue
 		}
@@ -128,10 +128,10 @@ func (n *node) expandRecursively() {
 }
 
 func (n *node) findChildByKey(key string) *node {
-	for it := n.next; it != nil && it != n.end; it = lo.Switch[bool, *node](true).
+	for it := n.next; it != nil && it != n.end; it = fun.Switch(true, it).
 		Case(it.chunkEnd != nil, it.chunkEnd).
 		Case(it.end != nil, it.end).
-		Default(it).next {
+		End().next {
 		if it.key == nil {
 			continue
 		}
@@ -149,7 +149,7 @@ func (n *node) findChildByKey(key string) *node {
 }
 
 func (n *node) findChildByIndex(index int) *node {
-	for at := n.next; at != nil && at != n.end; at = lo.Ternary(at.end != nil, at.end, at).next {
+	for at := n.next; at != nil && at != n.end; at = fun.IF(at.end != nil, at.end, at).next {
 		if at.index == index {
 			return at
 		}
@@ -164,7 +164,7 @@ func (n *node) paths(prefix string, paths *[]string, nodes *[]*node) {
 		if it.key != nil {
 			quoted := *it.key
 			unquoted, err := strconv.Unquote(quoted)
-			path = lo.Ternary(
+			path = fun.IF(
 				err == nil && jsonpath.Identifier.MatchString(unquoted),
 				"."+unquoted,
 				"["+quoted+"]",
@@ -193,7 +193,7 @@ func (n *node) children() ([]string, []*node) {
 
 	var paths []string
 	var nodes []*node
-	for it := lo.Ternary(n.isCollapsed(), n.collapsed, n.next); it != nil && it != n.end; it = lo.Ternary(it.hasChildren(), it.end, it).next {
+	for it := fun.IF(n.isCollapsed(), n.collapsed, n.next); it != nil && it != n.end; it = fun.IF(it.hasChildren(), it.end, it).next {
 		if it.key == nil {
 			continue
 		}

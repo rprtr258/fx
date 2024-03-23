@@ -4,12 +4,12 @@ import (
 	"unicode/utf8"
 
 	"github.com/mattn/go-runewidth"
-	"github.com/samber/lo"
+	"github.com/rprtr258/fun"
 )
 
 func dropWrapAll(n *node) {
-	for ; n != nil; n = lo.Ternary(n.isCollapsed(), n.collapsed, n.next) {
-		if lo.FromPtr(n.value) != "" && lo.FromPtr(n.value)[0] == '"' {
+	for ; n != nil; n = fun.IF(n.isCollapsed(), n.collapsed, n.next) {
+		if fun.Deref(n.value) != "" && fun.Deref(n.value)[0] == '"' {
 			n.dropChunks()
 		}
 	}
@@ -20,8 +20,8 @@ func wrapAll(n *node, termWidth int) {
 		return
 	}
 
-	for ; n != nil; n = lo.Ternary(n.isCollapsed(), n.collapsed, n.next) {
-		if lo.FromPtr(n.value) == "" || lo.FromPtr(n.value)[0] != '"' {
+	for ; n != nil; n = fun.IF(n.isCollapsed(), n.collapsed, n.next) {
+		if fun.Deref(n.value) == "" || fun.Deref(n.value)[0] != '"' {
 			continue
 		}
 
@@ -31,12 +31,12 @@ func wrapAll(n *node, termWidth int) {
 			continue
 		}
 
-		n.chunk = lo.ToPtr(lines[0])
+		n.chunk = fun.Ptr(lines[0])
 		for i := 1; i < len(lines); i++ {
 			n.insertChunk(&node{
 				directParent: n,
 				depth:        n.depth,
-				chunk:        lo.ToPtr(lines[i]),
+				chunk:        fun.Ptr(lines[i]),
 				comma:        n.comma && i == len(lines)-1,
 			})
 		}
@@ -54,7 +54,7 @@ func doWrap(n *node, termWidth int) []string {
 
 	lines := make([]string, 0, 1)
 	start, end := 0, 0
-	value := lo.FromPtr(n.value)
+	value := fun.Deref(n.value)
 	for _, r := range value {
 		w := runewidth.RuneWidth(r)
 		if width+w > termWidth {
