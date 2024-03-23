@@ -7,6 +7,12 @@ import (
 	"github.com/rprtr258/fun"
 )
 
+type scanner struct {
+	src    []rune
+	tokens []token
+	i      int
+}
+
 type node struct {
 	prev, next, end *node
 	directParent    *node
@@ -207,4 +213,119 @@ func (n *node) children() ([]string, []*node) {
 		nodes = append(nodes, it)
 	}
 	return paths, nodes
+}
+
+func (p *scanner) parseObject(parent *node) *node {
+	res := &node{
+		directParent:   parent,
+		indirectParent: fun.Deref(parent).directParent,
+		depth:          fun.Deref(parent).depth,
+		value:          fun.Ptr("{"),
+	}
+
+	p.i++ // {
+	children := []*node{}
+	for p.tokens[p.i].kind == tokenKindString {
+		key := p.tokens[p.i]
+		p.i += 2 // key :
+		value := p.parseValue(res)
+		children = append(children, &node{
+			directParent:   res,
+			indirectParent: parent,
+			depth:          res.depth + 1,
+			key:            fun.Ptr(string(p.src[key.start:key.end])),
+			value:          value.value,
+		})
+		if p.tokens[p.i].kind == tokenKindComma {
+			p.i++ // ,
+		}
+	}
+	p.i++ // }
+	children = append(children, &node{
+		directParent:   res,
+		indirectParent: parent,
+		depth:          res.depth,
+		value:          fun.Ptr("}"),
+	})
+
+	for i, ch := range children {
+		if i > 0 {
+			ch.prev = children[i-1]
+		}
+		if i < len(children)-1 {
+			ch.next = children[i+1]
+		}
+	}
+
+	if len(children) > 0 {
+		res.next = children[0]
+	}
+	return res
+}
+
+func (p *scanner) parseArray(parent *node) *node {
+	res := &node{
+		directParent:   parent,
+		indirectParent: fun.Deref(parent).directParent,
+		depth:          fun.Deref(parent).depth,
+		value:          fun.Ptr("["),
+	}
+
+	p.i++ // [
+	children := []*node{}
+	for p.tokens[p.i].kind != tokenKindArrayEnd {
+		children = append(children, p.parseValue(res))
+		if p.tokens[p.i].kind == tokenKindComma {
+			p.i++ // ,
+		}
+	}
+	p.i++ // ]
+	children = append(children, &node{
+		directParent:   res,
+		indirectParent: parent,
+		depth:          res.depth,
+		value:          fun.Ptr("]"),
+	})
+
+	for i, ch := range children {
+		if i > 0 {
+			ch.prev = children[i-1]
+		}
+		if i < len(children)-1 {
+			ch.next = children[i+1]
+		}
+	}
+
+	if len(children) > 0 {
+		res.next = children[0]
+	}
+	return res
+}
+
+func (p *scanner) parseValue(parent *node) *node {
+	switch t := p.tokens[p.i]; t.kind {
+	case tokenKindString, tokenKindNumber, tokenKindTrue, tokenKindFalse, tokenKindNull:
+		p.i++
+		return &node{
+			directParent:   parent,
+			indirectParent: fun.Deref(parent).directParent,
+			depth:          fun.Deref(parent).depth + 1,
+			value:          fun.Ptr(string(p.src[t.start:t.end])),
+		}
+	case tokenKindObjectStart:
+		return p.parseObject(parent)
+	case tokenKindArrayStart:
+		return p.parseArray(parent)
+	default:
+		return nil
+	}
+}
+
+func nodeparse(src string, tokens []token) *node {
+	p := &scanner{
+		src:    []rune(src),
+		tokens: tokens,
+		i:      0,
+	}
+	return p.parseValue(nil)
 }

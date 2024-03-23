@@ -970,10 +970,7 @@ func run() error {
 		return err
 	}
 
-	head, err := parse(data)
-	if err != nil {
-		return err
-	}
+	head := nodeparse(string(data), parse(string(data)))
 
 	digInput := textinput.New()
 	digInput.Prompt = ""

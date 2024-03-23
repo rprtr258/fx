@@ -4,14 +4,13 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestNode_paths(t *testing.T) {
 	t.Parallel()
 
-	n, err := parse([]byte(`{"a": 1, "b": {"f": 2}, "c": [3, 4]}`))
-	require.NoError(t, err)
+	s := `{"a": 1, "b": {"f": 2}, "c": [3, 4]}`
+	n := nodeparse(s, parse(s))
 
 	var paths []string
 	var nodes []*node
@@ -22,9 +21,8 @@ func TestNode_paths(t *testing.T) {
 func TestNode_children(t *testing.T) {
 	t.Parallel()
 
-	n, err := parse([]byte(`{"a": 1, "b": {"f": 2}, "c": [3, 4]}`))
-	require.NoError(t, err)
-
+	s := `{"a": 1, "b": {"f": 2}, "c": [3, 4]}`
+	n := nodeparse(s, parse(s))
 	paths, _ := n.children()
 	assert.Equal(t, []string{"a", "b", "c"}, paths)
 }

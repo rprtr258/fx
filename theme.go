@@ -33,7 +33,7 @@ func valueStyle(bb *string, selected, chunk bool) scuf.Modifier {
 	}
 
 	b := []byte(*bb)
-	if isDigit(b[0]) || b[0] == '-' {
+	if isDigit(rune(b[0])) || b[0] == '-' {
 		return currentTheme.Number
 	}
 

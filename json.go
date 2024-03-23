@@ -1,143 +1,197 @@
 package main
 
 import (
-	"encoding/json"
-	"fmt"
-	"sort"
-	"strconv"
-
 	"github.com/rprtr258/fun"
 )
 
-func isDigit(ch byte) bool {
+type tokenKind int
+
+const (
+	tokenKindUnknown     tokenKind = iota
+	tokenKindObjectStart           // {
+	tokenKindObjectEnd             // }
+	tokenKindArrayStart            // [
+	tokenKindArrayEnd              // ]
+	tokenKindString                // "..."
+	tokenKindNumber                // 3.1415
+	tokenKindTrue                  // true
+	tokenKindFalse                 // false
+	tokenKindNull                  // null
+	tokenKindComma                 // ,
+	tokenKindColon                 // :
+)
+
+type token struct {
+	kind       tokenKind
+	start, end int
+}
+
+func isDigit(ch rune) bool {
 	return ch >= '0' && ch <= '9'
 }
 
+func isWhitespace(ch rune) bool {
+	return fun.Contains(ch, ' ', '\t', '\n', '\r')
+}
+
 type jsonParser struct {
-	depth int
+	src []rune
+	i   int
 }
 
-func parse(data []byte) (_ *node, err error) {
-	p := &jsonParser{}
-	defer func() {
-		if r := recover(); r != nil {
-			err = fmt.Errorf("%v", r)
-		}
-	}()
+func (p *jsonParser) cur() (rune, bool) {
+	if p.i >= len(p.src) {
+		return 0, false
+	}
+	return p.src[p.i], true
+}
 
-	var m any
-	if err := json.Unmarshal(data, &m); err != nil {
-		return nil, err
+func (p *jsonParser) next() {
+	if p.i < len(p.src)-1 {
+		p.i++
+	}
+}
+
+func (p *jsonParser) rest() token {
+	return token{
+		kind:  tokenKindUnknown,
+		start: p.i,
+		end:   len(p.src),
+	}
+}
+
+func (p *jsonParser) skipWhitespace() {
+	for {
+		if c, ok := p.cur(); !ok || !isWhitespace(c) {
+			return
+		}
+		p.next()
+	}
+}
+
+func (p *jsonParser) parseString() token {
+	i := p.i
+	p.next() // "
+	for p.i < len(p.src) && p.src[p.i] != '"' {
+		p.next() // TODO: also check for \X, \u0000, \U0000
+	}
+	p.next() // "
+	return token{
+		kind:  tokenKindString,
+		start: i,
+		end:   p.i,
+	}
+}
+
+// TODO: test exhaustively
+func (p *jsonParser) parseNumber() token {
+	i := p.i
+	if p.src[i] == '-' {
+		p.next()
+	}
+	for p.i < len(p.src) && isDigit(p.src[p.i]) {
+		p.next()
+	}
+	if p.i < len(p.src) && p.src[p.i] == '.' {
+		p.next()
+		for p.i < len(p.src) && isDigit(p.src[p.i]) {
+			p.next()
+		}
+	}
+	if p.i < len(p.src) && (p.src[p.i] == 'e' || p.src[p.i] == 'E') {
+		p.next()
+		if p.i < len(p.src) && (p.src[p.i] == '-' || p.src[p.i] == '+') {
+			p.next()
+		}
+		for p.i < len(p.src) && isDigit(p.src[p.i]) {
+			p.next()
+		}
+	}
+	return token{
+		kind:  tokenKindNumber,
+		start: i,
+		end:   p.i,
+	}
+}
+
+func (p *jsonParser) parseObject() []token {
+	kvs := []token{p.parseKeyword(tokenKindObjectStart, "{")}
+	for {
+		p.skipWhitespace()
+		kvs = append(kvs, p.parseString()) // key
+		p.skipWhitespace()
+		kvs = append(kvs, p.parseKeyword(tokenKindColon, ":")) // :
+		kvs = append(kvs, p.parseValue()...)                   // value
+		if c, ok := p.cur(); !ok || c != ',' {
+			break
+		}
+		kvs = append(kvs, p.parseKeyword(tokenKindComma, ",")) // ,
+	}
+	return append(kvs, p.parseKeyword(tokenKindObjectEnd, "}"))
+}
+
+func (p *jsonParser) parseArray() []token {
+	elems := []token{p.parseKeyword(tokenKindArrayStart, "[")}
+	for {
+		elems = append(elems, p.parseValue()...) // value
+		p.skipWhitespace()
+		if c, ok := p.cur(); !ok || c != ',' {
+			break
+		}
+		elems = append(elems, p.parseKeyword(tokenKindComma, ",")) // ,
+	}
+	return append(elems, p.parseKeyword(tokenKindArrayEnd, "]"))
+}
+
+func (p *jsonParser) parseKeyword(kind tokenKind, name string) token {
+	i := p.i
+	for _, r := range name {
+		c, ok := p.cur()
+		if !ok || c != r {
+			return p.rest()
+		}
+		p.next()
+	}
+	return token{
+		kind:  kind,
+		start: i,
+		end:   p.i,
+	}
+}
+
+func (p *jsonParser) parseValue() []token {
+	p.skipWhitespace()
+
+	c, ok := p.cur()
+	if !ok {
+		return []token{p.rest()}
 	}
 
-	return p.parseValue(m), nil
-}
-
-func (p *jsonParser) parseValue(m any) *node {
-	switch m := m.(type) {
-	case string:
-		return p.parseString(m)
-	case float64:
-		return p.parseNumber(m)
-	case map[string]any:
-		return p.parseObject(m)
-	case []any:
-		return p.parseArray(m)
-	case bool:
-		return p.parseKeyword(strconv.FormatBool(m))
-	case nil:
-		return p.parseKeyword("null")
+	switch c {
+	case '{':
+		return p.parseObject()
+	case '[':
+		return p.parseArray()
+	case '"':
+		return []token{p.parseString()}
+	case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '-':
+		return []token{p.parseNumber()}
+	case 't':
+		return []token{p.parseKeyword(tokenKindTrue, "true")}
+	case 'f':
+		return []token{p.parseKeyword(tokenKindFalse, "false")}
+	case 'n':
+		return []token{p.parseKeyword(tokenKindNull, "null")}
 	default:
-		panic(fmt.Sprintf("Unexpected type %T", m))
+		return []token{p.rest()}
 	}
 }
 
-func (p *jsonParser) parseString(m string) *node {
-	return &node{
-		depth: p.depth,
-		value: fun.Ptr(strconv.Quote(m)),
+// TODO: return generator
+func parse(s string) []token {
+	p := &jsonParser{
+		src: []rune(s),
+		i:   0,
 	}
-}
-
-func (p *jsonParser) parseNumber(m float64) *node {
-	return &node{
-		depth: p.depth,
-		// TODO: somehow get raw number representation
-		value: fun.Ptr(strconv.FormatFloat(m, 'f', -1, 64)),
-	}
-}
-
-func (p *jsonParser) parseObject(m map[string]any) *node {
-	object := &node{
-		depth: p.depth,
-		value: fun.Ptr("{"),
-	}
-
-	keys := fun.Keys(m)
-	sort.Strings(keys)
-
-	for i, k := range keys {
-		p.depth++
-		key := p.parseString(k)
-		value := p.parseValue(m[k])
-		p.depth--
-
-		key.key, key.value = key.value, value.value
-		key.directParent = object
-		key.next = value.next
-		if key.next != nil {
-			key.next.prev = key
-		}
-		key.end = value.end
-		value.indirectParent = key
-		object.append(key)
-
-		if i < len(m)-1 {
-			object.end.comma = true
-		}
-	}
-
-	object.append(&node{
-		depth:        p.depth,
-		value:        fun.Ptr("}"),
-		directParent: object,
-		index:        -1,
-	})
-	return object
-}
-
-func (p *jsonParser) parseArray(m []any) *node {
-	arr := &node{
-		depth: p.depth,
-		value: fun.Ptr("["),
-	}
-
-	for i := range m {
-		p.depth++
-		value := p.parseValue(m[i])
-		value.directParent = arr
-		value.index = i
-		p.depth--
-
-		arr.append(value)
-
-		if i < len(m)-1 {
-			arr.end.comma = true
-		}
-	}
-
-	arr.append(&node{
-		depth:        p.depth,
-		value:        fun.Ptr("]"),
-		directParent: arr,
-		index:        -1,
-	})
-	return arr
-}
-
-func (p *jsonParser) parseKeyword(name string) *node {
-	return &node{
-		depth: p.depth,
-		value: fun.Ptr(name),
-	}
+	return p.parseValue()
 }

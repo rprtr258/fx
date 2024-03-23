@@ -9,7 +9,6 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/x/exp/teatest"
-	"github.com/stretchr/testify/require"
 )
 
 //go:embed testdata/example.json
@@ -18,9 +17,7 @@ var _json []byte
 func prepare(t *testing.T) *teatest.TestModel {
 	t.Helper()
 
-	head, err := parse(_json)
-	require.NoError(t, err)
-
+	head := nodeparse(string(_json), parse(string(_json)))
 	return teatest.NewTestModel(
 		t,
 		&model{
