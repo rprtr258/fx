@@ -1162,7 +1162,10 @@ func (m *model) View(vb tea.Viewbox) {
 // 	return nodes[matches[0].Index]
 // }
 
-func run(ctx context.Context) error {
+func run() error {
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer cancel()
+
 	var args []string
 	for _, arg := range os.Args[1:] {
 		switch arg {
@@ -1230,10 +1233,7 @@ func run(ctx context.Context) error {
 }
 
 func main() {
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
-	defer cancel()
-
-	if err := run(ctx); err != nil {
+	if err := run(); err != nil {
 		if err == ErrUsage {
 			fmt.Println(usage)
 			return
