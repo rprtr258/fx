@@ -11,24 +11,28 @@ import (
 	"github.com/rprtr258/tea/components/headless/hierachy"
 	"github.com/rprtr258/tea/components/textinput"
 	"github.com/rprtr258/tea/teatest"
-	"github.com/stretchr/testify/require"
 )
 
 //go:embed testdata/example.json
 var _json []byte
 
+var _original = func() any {
+	var v any
+	if err := json.Unmarshal(_json, &v); err != nil {
+		panic(err.Error())
+	}
+	return v
+}()
+
 func prepare(t *testing.T) *teatest.TestModel[*model] {
 	t.Helper()
-
-	var v any
-	require.NoError(t, json.Unmarshal(_json, &v))
 
 	return teatest.NewTestModelFixture(
 		t,
 		&model{
-			tree:       hierachy.New(fromJSON(v)),
-			original:   v,
-			result:     v,
+			tree:       hierachy.New(fromJSON(_original)),
+			original:   _original,
+			result:     _original,
 			queryError: "",
 			digInput:   textinput.New(),
 		},
