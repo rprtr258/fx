@@ -1,6 +1,6 @@
 package main
 
-import "github.com/charmbracelet/bubbles/key"
+import "github.com/rprtr258/tea/components/key"
 
 type KeyMap struct {
 	Quit                key.Binding
@@ -29,104 +29,104 @@ type KeyMap struct {
 }
 
 var keyMap = KeyMap{
-	Quit: key.NewBinding(
-		key.WithKeys("q", "ctrl+c", "esc"),
-		key.WithHelp("", "exit program"),
-	),
-	PageDown: key.NewBinding(
-		key.WithKeys("pgdown", " ", "f"),
-		key.WithHelp("pgdown, space, f", "page down"),
-	),
-	PageUp: key.NewBinding(
-		key.WithKeys("pgup", "b"),
-		key.WithHelp("pgup, b", "page up"),
-	),
-	HalfPageUp: key.NewBinding(
-		key.WithKeys("u", "ctrl+u"),
-		key.WithHelp("", "half page up"),
-	),
-	HalfPageDown: key.NewBinding(
-		key.WithKeys("d", "ctrl+d"),
-		key.WithHelp("", "half page down"),
-	),
-	GotoTop: key.NewBinding(
-		key.WithKeys("g", "home"),
-		key.WithHelp("", "goto top"),
-	),
-	GotoBottom: key.NewBinding(
-		key.WithKeys("G", "end"),
-		key.WithHelp("", "goto bottom"),
-	),
-	Down: key.NewBinding(
-		key.WithKeys("down", "j"),
-		key.WithHelp("", "down"),
-	),
-	Up: key.NewBinding(
-		key.WithKeys("up", "k"),
-		key.WithHelp("", "up"),
-	),
-	Expand: key.NewBinding(
-		key.WithKeys("right", "l", "enter"),
-		key.WithHelp("", "expand"),
-	),
-	Collapse: key.NewBinding(
-		key.WithKeys("left", "h", "backspace"),
-		key.WithHelp("", "collapse"),
-	),
-	ExpandRecursively: key.NewBinding(
-		key.WithKeys("L", "shift+right"),
-		key.WithHelp("", "expand recursively"),
-	),
-	CollapseRecursively: key.NewBinding(
-		key.WithKeys("H", "shift+left"),
-		key.WithHelp("", "collapse recursively"),
-	),
-	ExpandAll: key.NewBinding(
-		key.WithKeys("e"),
-		key.WithHelp("", "expand all"),
-	),
-	CollapseAll: key.NewBinding(
-		key.WithKeys("E"),
-		key.WithHelp("", "collapse all"),
-	),
-	NextSibling: key.NewBinding(
-		key.WithKeys("J", "shift+down"),
-		key.WithHelp("", "next sibling"),
-	),
-	PrevSibling: key.NewBinding(
-		key.WithKeys("K", "shift+up"),
-		key.WithHelp("", "previous sibling"),
-	),
-	ToggleWrap: key.NewBinding(
-		key.WithKeys("z"),
-		key.WithHelp("", "toggle strings wrap"),
-	),
-	Yank: key.NewBinding(
-		key.WithKeys("y"),
-		key.WithHelp("", "yank/copy"),
-	),
-	Search: key.NewBinding(
-		key.WithKeys("/"),
-		key.WithHelp("", "search regexp"),
-	),
-	SearchNext: key.NewBinding(
-		key.WithKeys("n"),
-		key.WithHelp("", "next search result"),
-	),
-	SearchPrev: key.NewBinding(
-		key.WithKeys("N"),
-		key.WithHelp("", "prev search result"),
-	),
-	Dig: key.NewBinding(
-		key.WithKeys("."),
-		key.WithHelp("", "dig json"),
-	),
+	Quit: key.Binding{
+		Keys: []string{"q", "ctrl+c", "esc"},
+		Help: key.Help{"", "exit program"},
+	},
+	PageDown: key.Binding{
+		Keys: []string{"pgdown", " ", "f"},
+		Help: key.Help{"pgdown, space, f", "page down"},
+	},
+	PageUp: key.Binding{
+		Keys: []string{"pgup", "b"},
+		Help: key.Help{"pgup, b", "page up"},
+	},
+	HalfPageUp: key.Binding{
+		Keys: []string{"u", "ctrl+u"},
+		Help: key.Help{"", "half page up"},
+	},
+	HalfPageDown: key.Binding{
+		Keys: []string{"d", "ctrl+d"},
+		Help: key.Help{"", "half page down"},
+	},
+	GotoTop: key.Binding{
+		Keys: []string{"g", "home"},
+		Help: key.Help{"", "goto top"},
+	},
+	GotoBottom: key.Binding{
+		Keys: []string{"G", "end"},
+		Help: key.Help{"", "goto bottom"},
+	},
+	Down: key.Binding{
+		Keys: []string{"down", "j"},
+		Help: key.Help{"", "down"},
+	},
+	Up: key.Binding{
+		Keys: []string{"up", "k"},
+		Help: key.Help{"", "up"},
+	},
+	Expand: key.Binding{
+		Keys: []string{"right", "l", "enter"},
+		Help: key.Help{"", "expand"},
+	},
+	Collapse: key.Binding{
+		Keys: []string{"left", "h", "backspace"},
+		Help: key.Help{"", "collapse"},
+	},
+	ExpandRecursively: key.Binding{
+		Keys: []string{"L", "shift+right"},
+		Help: key.Help{"", "expand recursively"},
+	},
+	CollapseRecursively: key.Binding{
+		Keys: []string{"H", "shift+left"},
+		Help: key.Help{"", "collapse recursively"},
+	},
+	ExpandAll: key.Binding{
+		Keys: []string{"e"},
+		Help: key.Help{"", "expand all"},
+	},
+	CollapseAll: key.Binding{
+		Keys: []string{"E"},
+		Help: key.Help{"", "collapse all"},
+	},
+	NextSibling: key.Binding{
+		Keys: []string{"J", "shift+down"},
+		Help: key.Help{"", "next sibling"},
+	},
+	PrevSibling: key.Binding{
+		Keys: []string{"K", "shift+up"},
+		Help: key.Help{"", "previous sibling"},
+	},
+	ToggleWrap: key.Binding{
+		Keys: []string{"z"},
+		Help: key.Help{"", "toggle strings wrap"},
+	},
+	Yank: key.Binding{
+		Keys: []string{"y"},
+		Help: key.Help{"", "yank/copy"},
+	},
+	Search: key.Binding{
+		Keys: []string{"/"},
+		Help: key.Help{"", "search regexp"},
+	},
+	SearchNext: key.Binding{
+		Keys: []string{"n"},
+		Help: key.Help{"", "next search result"},
+	},
+	SearchPrev: key.Binding{
+		Keys: []string{"N"},
+		Help: key.Help{"", "prev search result"},
+	},
+	Dig: key.Binding{
+		Keys: []string{"."},
+		Help: key.Help{"", "dig json"},
+	},
 }
 
 var (
-	yankValue = key.NewBinding(key.WithKeys("y"))
-	yankKey   = key.NewBinding(key.WithKeys("k"))
-	yankPath  = key.NewBinding(key.WithKeys("p"))
-	arrowUp   = key.NewBinding(key.WithKeys("up"))
-	arrowDown = key.NewBinding(key.WithKeys("down"))
+	yankValue = key.Binding{Keys: []string{"y"}}
+	yankKey   = key.Binding{Keys: []string{"k"}}
+	yankPath  = key.Binding{Keys: []string{"p"}}
+	arrowUp   = key.Binding{Keys: []string{"up"}}
+	arrowDown = key.Binding{Keys: []string{"down"}}
 )

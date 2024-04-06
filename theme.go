@@ -19,8 +19,16 @@ type theme struct {
 	Key       scuf.Modifier
 	String    scuf.Modifier
 	Null      scuf.Modifier
-	Boolean   scuf.Modifier
+	Bool      scuf.Modifier
 	Number    scuf.Modifier
+}
+
+func isDigit(ch rune) bool {
+	return ch >= '0' && ch <= '9'
+}
+
+func isWhitespace(ch rune) bool {
+	return fun.Contains(ch, ' ', '\t', '\n', '\r')
 }
 
 func valueStyle(bb *string, selected, chunk bool) scuf.Modifier {
@@ -41,7 +49,7 @@ func valueStyle(bb *string, selected, chunk bool) scuf.Modifier {
 	case '"':
 		return currentTheme.String
 	case 't', 'f':
-		return currentTheme.Boolean
+		return currentTheme.Bool
 	case 'n':
 		return currentTheme.Null
 	case '{', '[', '}', ']':
@@ -107,7 +115,7 @@ var themes = map[string]theme{
 		Key:       nil,
 		String:    nil,
 		Null:      nil,
-		Boolean:   nil,
+		Bool:      nil,
 		Number:    nil,
 	},
 	"1": {
@@ -119,7 +127,7 @@ var themes = map[string]theme{
 		Key:       bold(scuf.FgANSI(4)),
 		String:    scuf.FgANSI(2),
 		Null:      defaultNull,
-		Boolean:   scuf.FgANSI(5),
+		Bool:      scuf.FgANSI(5),
 		Number:    scuf.FgANSI(6),
 	},
 	"2": {
@@ -131,7 +139,7 @@ var themes = map[string]theme{
 		Key:       scuf.FgANSI(2),
 		String:    scuf.FgANSI(4),
 		Null:      defaultNull,
-		Boolean:   scuf.FgANSI(5),
+		Bool:      scuf.FgANSI(5),
 		Number:    scuf.FgANSI(6),
 	},
 	"3": {
@@ -143,7 +151,7 @@ var themes = map[string]theme{
 		Key:       scuf.FgANSI(13),
 		String:    scuf.FgANSI(11),
 		Null:      defaultNull,
-		Boolean:   scuf.FgANSI(1),
+		Bool:      scuf.FgANSI(1),
 		Number:    scuf.FgANSI(14),
 	},
 	"4": {
@@ -155,7 +163,7 @@ var themes = map[string]theme{
 		Key:       scuf.FgRGB(scuf.MustParseHexRGB("#00F5D4")),
 		String:    scuf.FgRGB(scuf.MustParseHexRGB("#00BBF9")),
 		Null:      defaultNull,
-		Boolean:   scuf.FgRGB(scuf.MustParseHexRGB("#F15BB5")),
+		Bool:      scuf.FgRGB(scuf.MustParseHexRGB("#F15BB5")),
 		Number:    scuf.FgRGB(scuf.MustParseHexRGB("#9B5DE5")),
 	},
 	"5": {
@@ -167,7 +175,7 @@ var themes = map[string]theme{
 		Key:       scuf.FgRGB(scuf.MustParseHexRGB("#faf0ca")),
 		String:    scuf.FgRGB(scuf.MustParseHexRGB("#f4d35e")),
 		Null:      defaultNull,
-		Boolean:   scuf.FgRGB(scuf.MustParseHexRGB("#ee964b")),
+		Bool:      scuf.FgRGB(scuf.MustParseHexRGB("#ee964b")),
 		Number:    scuf.FgRGB(scuf.MustParseHexRGB("#ee964b")),
 	},
 	"6": {
@@ -179,7 +187,7 @@ var themes = map[string]theme{
 		Key:       scuf.FgRGB(scuf.MustParseHexRGB("#4D96FF")),
 		String:    scuf.FgRGB(scuf.MustParseHexRGB("#6BCB77")),
 		Null:      defaultNull,
-		Boolean:   scuf.FgRGB(scuf.MustParseHexRGB("#FF6B6B")),
+		Bool:      scuf.FgRGB(scuf.MustParseHexRGB("#FF6B6B")),
 		Number:    scuf.FgRGB(scuf.MustParseHexRGB("#FFD93D")),
 	},
 	"7": {
@@ -191,7 +199,7 @@ var themes = map[string]theme{
 		Key:       bold(scuf.FgANSI(42)),
 		String:    bold(scuf.FgANSI(213)),
 		Null:      defaultNull,
-		Boolean:   bold(scuf.FgANSI(201)),
+		Bool:      bold(scuf.FgANSI(201)),
 		Number:    bold(scuf.FgANSI(201)),
 	},
 	"8": {
@@ -203,7 +211,7 @@ var themes = map[string]theme{
 		Key:       bold(scuf.FgANSI(51)),
 		String:    scuf.FgANSI(195),
 		Null:      defaultNull,
-		Boolean:   scuf.FgANSI(50),
+		Bool:      scuf.FgANSI(50),
 		Number:    scuf.FgANSI(123),
 	},
 	"🔵": {
@@ -215,7 +223,7 @@ var themes = map[string]theme{
 		Key:       scuf.FgANSI(33),
 		String:    nil,
 		Null:      nil,
-		Boolean:   nil,
+		Bool:      nil,
 		Number:    nil,
 	},
 	"🥝": {
@@ -227,7 +235,7 @@ var themes = map[string]theme{
 		Key:       bold(scuf.FgANSI(154)),
 		String:    scuf.FgANSI(82),
 		Null:      scuf.FgANSI(230),
-		Boolean:   scuf.FgANSI(226),
+		Bool:      scuf.FgANSI(226),
 		Number:    scuf.FgANSI(226),
 	},
 }
@@ -251,7 +259,7 @@ func themeTester() {
 		}{
 			{`"string"`, t.String, `"Fox jumps over the lazy dog"`},
 			{`"number"`, t.Number, "1234567890"},
-			{`"boolean"`, t.Boolean, "true"},
+			{`"boolean"`, t.Bool, "true"},
 			{`"null"`, t.Null, "null"},
 		} {
 			fmt.Printf("  %v%v %v%v\n",
