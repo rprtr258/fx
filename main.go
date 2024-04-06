@@ -277,9 +277,6 @@ func (m *model) View(vb tea.Viewbox) {
 	vbError.WriteLine(m.queryError)
 }
 
-// //go:embed index.js
-// var src []byte
-
 // func reFindAllStringIndex(re *regexp.Regexp, s string) [][2]int {
 // 	var res [][2]int
 // 	for _, v := range re.FindAllStringIndex(s, -1) {

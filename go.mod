@@ -2,10 +2,7 @@ module github.com/antonmedv/fx
 
 go 1.21
 
-replace (
-	github.com/rprtr258/assert => ../assert
-	github.com/rprtr258/tea => ../tea
-)
+replace github.com/rprtr258/assert => ../assert
 
 require (
 	github.com/itchyny/gojq v0.12.15
@@ -14,7 +11,7 @@ require (
 	github.com/muesli/termenv v0.15.2
 	github.com/rprtr258/fun v0.0.13
 	github.com/rprtr258/scuf v0.0.6
-	github.com/rprtr258/tea v0.0.0-00010101000000-000000000000
+	github.com/rprtr258/tea v0.0.0-20240406214246-470968dbed62
 	github.com/stretchr/testify v1.8.4
 )
 
