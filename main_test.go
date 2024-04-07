@@ -27,6 +27,9 @@ var _original = func() any {
 func prepare(t *testing.T) *teatest.TestModel[*model] {
 	t.Helper()
 
+	digInput := textinput.New()
+	digInput.SetValue(".")
+
 	return teatest.NewTestModelFixture(
 		t,
 		&model{
@@ -34,7 +37,7 @@ func prepare(t *testing.T) *teatest.TestModel[*model] {
 			original:   _original,
 			result:     _original,
 			queryError: "",
-			digInput:   textinput.New(),
+			digInput:   digInput,
 		},
 		teatest.WithInitialTermSize(80, 40),
 	)
