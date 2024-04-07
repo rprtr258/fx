@@ -9,9 +9,9 @@ require (
 	github.com/kr/pretty v0.3.1
 	github.com/mattn/go-isatty v0.0.20
 	github.com/muesli/termenv v0.15.2
-	github.com/rprtr258/fun v0.0.13
+	github.com/rprtr258/fun v0.0.16-0.20240407071119-ba32d9b883f9
 	github.com/rprtr258/scuf v0.0.6
-	github.com/rprtr258/tea v0.0.0-20240406214246-470968dbed62
+	github.com/rprtr258/tea v0.0.0-20240407080333-e4c8b8220fa6
 	github.com/stretchr/testify v1.8.4
 )
 
