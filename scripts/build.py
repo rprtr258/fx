@@ -4,7 +4,7 @@ from subprocess import run
 import requests
 
 async def main():
-  latest = requests.get("https://api.github.com/repos/rprtr258/fx/releases/latest").json()["tag_name"]
+  latest = requests.get("https://api.github.com/repos/rprtr258/fx/releases/latest", timeout=10).json()["tag_name"]
 
   run("go mod download")
   async for goos in ["linux", "darwin", "windows"]:
