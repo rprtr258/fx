@@ -3,99 +3,88 @@ package main
 import (
 	"bytes"
 	_ "embed"
+	"encoding/json"
 	"testing"
 	"time"
 
-	"github.com/charmbracelet/bubbles/textinput"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/x/exp/teatest"
+	"github.com/rprtr258/tea"
+	"github.com/rprtr258/tea/components/headless/hierachy"
+	"github.com/rprtr258/tea/components/textinput"
+	"github.com/rprtr258/tea/teatest"
 )
 
 //go:embed testdata/example.json
 var _json []byte
 
-func prepare(t *testing.T) *teatest.TestModel {
+var _original = func() any {
+	var v any
+	if err := json.Unmarshal(_json, &v); err != nil {
+		panic(err.Error())
+	}
+	return v
+}()
+
+func prepare(t *testing.T) *teatest.TestModel[*model] {
 	t.Helper()
 
-	head := nodeparse(string(_json), parse(string(_json)))
-	return teatest.NewTestModel(
+	digInput := textinput.New()
+	digInput.SetValue(".")
+
+	return teatest.NewTestModelFixture(
 		t,
 		&model{
-			top:         head,
-			head:        head,
-			wrap:        true,
-			showCursor:  true,
-			digInput:    textinput.New(),
-			searchInput: textinput.New(),
-			search:      newSearch(),
+			tree:       hierachy.New(fromJSON(_original)),
+			original:   _original,
+			result:     _original,
+			queryError: "",
+			digInput:   digInput,
 		},
 		teatest.WithInitialTermSize(80, 40),
 	)
 }
 
-func read(t *testing.T, tm *teatest.TestModel) []byte {
-	t.Helper()
+func Test(t *testing.T) {
+	t.Parallel()
 
-	var out []byte
-	teatest.WaitFor(t,
-		tm.Output(),
-		func(b []byte) bool {
-			out = b
-			return bytes.Contains(b, []byte("{"))
+	for name, keys := range map[string][]tea.MsgKey{
+		"Output": nil,
+		"Navigation": {
+			{Type: tea.KeyDown},
+			{Type: tea.KeyDown},
+			{Type: tea.KeyDown},
 		},
-		teatest.WithCheckInterval(time.Millisecond*100),
-		teatest.WithDuration(time.Second),
-	)
-	return out
-}
+		"Dig": {
+			{Type: tea.KeyRunes, Runes: []rune(".")},
+			{Type: tea.KeyRunes, Runes: []rune("year")},
+			{Type: tea.KeyEnter},
+		},
+		"CollapseRecursive": {
+			{Type: tea.KeyShiftLeft},
+		},
+	} {
+		keys := keys
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			tm := prepare(t)
 
-func TestOutput(t *testing.T) {
-	t.Parallel()
+			for _, key := range keys {
+				tm.Send(key)
+			}
 
-	tm := prepare(t)
+			var out []byte
+			teatest.WaitFor(t,
+				tm.Output(),
+				func(b []byte) bool {
+					out = b
+					return bytes.Contains(b, []byte("{"))
+				},
+				teatest.WithCheckInterval(time.Millisecond*100),
+				teatest.WithDuration(time.Second),
+			)
+			teatest.RequireEqualOutput(t, out)
 
-	teatest.RequireEqualOutput(t, read(t, tm))
-
-	tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("q")})
-	tm.WaitFinished(t, teatest.WithFinalTimeout(time.Second))
-}
-
-func TestNavigation(t *testing.T) {
-	t.Parallel()
-
-	tm := prepare(t)
-
-	tm.Send(tea.KeyMsg{Type: tea.KeyDown})
-	tm.Send(tea.KeyMsg{Type: tea.KeyDown})
-	tm.Send(tea.KeyMsg{Type: tea.KeyDown})
-	teatest.RequireEqualOutput(t, read(t, tm))
-
-	tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("q")})
-	tm.WaitFinished(t, teatest.WithFinalTimeout(time.Second))
-}
-
-func TestDig(t *testing.T) {
-	t.Parallel()
-
-	tm := prepare(t)
-
-	tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(".")})
-	tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("year")})
-	tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
-	teatest.RequireEqualOutput(t, read(t, tm))
-
-	tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("q")})
-	tm.WaitFinished(t, teatest.WithFinalTimeout(time.Second))
-}
-
-func TestCollapseRecursive(t *testing.T) {
-	t.Parallel()
-
-	tm := prepare(t)
-
-	tm.Send(tea.KeyMsg{Type: tea.KeyShiftLeft})
-	teatest.RequireEqualOutput(t, read(t, tm))
-
-	tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("q")})
-	tm.WaitFinished(t, teatest.WithFinalTimeout(time.Second))
+			tm.Send(tea.MsgKey{Type: tea.KeyRunes, Runes: []rune("q")})
+			tm.WaitFinished(t, teatest.WithFinalTimeout(time.Second))
+		})
+	}
 }

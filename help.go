@@ -4,11 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"strings"
 
-	"github.com/charmbracelet/bubbles/key"
-	"github.com/charmbracelet/lipgloss"
+	"github.com/kr/pretty"
 	"github.com/rprtr258/fun"
+	"github.com/rprtr258/tea/components/key"
 )
 
 var ErrUsage = errors.New("usage")
@@ -22,18 +21,19 @@ var usage = func() string {
 		reflect.VisibleFields(v.Type())...,
 	)
 
-	keyMapInfo := lipgloss.NewStyle().PaddingLeft(2).Render(lipgloss.JoinHorizontal(
-		lipgloss.Top,
-		strings.Join(fun.Map[string](
-			func(b key.Binding, _ int) string {
-				return or(b.Help().Key, strings.Join(b.Keys(), ", ")) + "    "
-			}, fields...), "\n"),
+	// keyMapInfo := lipgloss.NewStyle().PaddingLeft(2).Render(lipgloss.JoinHorizontal(
+	// 	lipgloss.Top,
+	// 	strings.Join(fun.Map[string](
+	// 		func(b key.Binding, _ int) string {
+	// 			return or(b.Help().Key, strings.Join(b.Keys(), ", ")) + "    "
+	// 		}, fields...), "\n"),
 
-		strings.Join(fun.Map[string](
-			func(b key.Binding, _ int) string {
-				return b.Help().Desc
-			}, fields...), "\n"),
-	))
+	// 	strings.Join(fun.Map[string](
+	// 		func(b key.Binding, _ int) string {
+	// 			return b.Help().Desc
+	// 		}, fields...), "\n"),
+	// ))
+	keyMapInfo := pretty.Sprintf("%#v", fields) // TODO: get back
 
 	return fmt.Sprintf(`fx terminal JSON viewer
 Usage: fx [FILENAME] [SELECTOR]
